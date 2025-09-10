@@ -9,59 +9,20 @@ const HomeScreen = ({ navigation }) => {
   const [notificationCount, setNotificationCount] = useState(2);
   const [wishlistCount, setWishlistCount] = useState(3);
 
-  const [trackedProducts, setTrackedProducts] = useState([
-    {
-      id: '1',
-      name: 'Sony WH-1000XM4 Wireless Noise Canceling Headphones',
-      image: 'https://via.placeholder.com/150/FFFF00/000000?text=Sony+Headphones',
-      retailer: 'Amazon',
-      currentPrice: 299.99,
-      originalPrice: 349.99,
-      discount: 14,
-    },
-    {
-      id: '2',
-      name: 'Apple Watch Series 9 GPS 45mm',
-      image: 'https://via.placeholder.com/150/000000/FFFFFF?text=Apple+Watch',
-      retailer: 'Best Buy',
-      currentPrice: 429.00,
-      originalPrice: 459.00,
-      discount: 7,
-    },
-    {
-      id: '3',
-      name: 'Mechanical Gaming Keyboard RGB',
-      image: 'https://via.placeholder.com/150/FF0000/FFFFFF?text=Gaming+Keyboard',
-      retailer: 'Walmart',
-      currentPrice: 99.00,
-      originalPrice: 120.00,
-      discount: 17,
-    },
-    {
-      id: '4',
-      name: 'iPhone 15 Pro 128GB',
-      image: 'https://via.placeholder.com/150/0000FF/FFFFFF?text=iPhone+15',
-      retailer: 'Target',
-      currentPrice: 850.00,
-      originalPrice: 999.00,
-      discount: 15,
-    },
-  ]);
+  const [trackedProducts, setTrackedProducts] = useState([]);
 
-  const handleTrackProduct = (url) => {
-    // In a real application, this would trigger a scraping process
-    console.log('Tracking product:', url);
-    // For now, let's just add a dummy product
-    const newProduct = {
-      id: String(trackedProducts.length + 1),
-      name: `New Product from ${url.substring(0, 20)}...`,
-      image: 'https://via.placeholder.com/150/CCCCCC/000000?text=New+Product',
-      retailer: 'Various',
-      currentPrice: Math.floor(Math.random() * 500) + 50,
-      originalPrice: Math.floor(Math.random() * 600) + 100,
-      discount: Math.floor(Math.random() * 20),
-    };
-    setTrackedProducts((prevProducts) => [newProduct, ...prevProducts]);
+  const handleTrackProduct = (productData) => {
+    // Add the scraped product data to the trackedProducts state
+    setTrackedProducts((prevProducts) => [{
+      id: productData._id,
+      name: productData.productName,
+      image: productData.productImage || 'https://via.placeholder.com/150/CCCCCC/000000?text=No+Image',
+      retailer: 'N/A', // You might want to extract this from the URL or product data
+      currentPrice: productData.currentPrice,
+      originalPrice: productData.originalPrice || productData.currentPrice,
+      discount: productData.originalPrice ? Math.round(((productData.originalPrice - productData.currentPrice) / productData.originalPrice) * 100) : 0,
+      description: productData.description,
+    }, ...prevProducts]);
   };
 
   return (
@@ -95,8 +56,8 @@ const HomeScreen = ({ navigation }) => {
 
         <Text style={styles.sectionTitle}>Search Results</Text>
         <FlatList
-          data={trackedProducts.slice(0, 1)}
-          renderItem={({ item }) => <ProductDisplayCard product={item} />}
+          data={trackedProducts}
+          renderItem={({ item }) => <ProductDisplayCard product={item} />} 
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.productList}
         />

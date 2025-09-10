@@ -1,17 +1,216 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Alert } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { ActivityIndicator } from 'react-native-paper';
 import { Card, Title, Paragraph, Button, TextInput } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProductDisplayCard = ({ product }) => {
+  const [isInWishlist, setIsInWishlist] = useState(false); // State to manage wishlist status
+  const [imageError, setImageError] = useState(false);
+  const [showNotificationInput, setShowNotificationInput] = useState(false);
+  const [isNotified, setIsNotified] = useState(false);
+  const [fetchedTargetPrice, setFetchedTargetPrice] = useState(null);
+  const [targetPrice, setTargetPrice] = useState('');
+  const inputWidth = useRef(new Animated.Value(0)).current;
+  const [loadingWishlist, setLoadingWishlist] = useState(true);
+
+  const handleNotifyMeClick = async () => {
+    setShowNotificationInput(true);
+    Animated.timing(inputWidth, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const fetchTargetPrice = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/api/products/${product.productId}/targetPrice`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.data.targetPrice) {
+        setFetchedTargetPrice(response.data.targetPrice);
+        setIsNotified(true);
+      }
+    } catch (error) {
+      console.error('Error fetching target price:', error);
+    }
+  };
+
+  const handleSubmitPrice = async () => {
+    const currentPrice = product.currentPrice;
+    const enteredPrice = parseFloat(targetPrice);
+
+    if (isNaN(enteredPrice) || enteredPrice <= 0) {
+      alert('Please enter a valid target price.');
+      return;
+    }
+
+    if (enteredPrice >= currentPrice) {
+      alert(`Target price must be lower than the current price (₹${currentPrice.toFixed(2)}).`);
+      return;
+    }
+
+    try {
+      const response = await axios.post(`http://localhost:5000/api/products/${product.productId}/targetPrice`, {
+        targetPrice: enteredPrice,
+      });
+      Alert.alert('Success', response.data.message);
+      setIsNotified(true);
+    } catch (error) {
+      console.error('Error setting target price:', error);
+      Alert.alert('Error', 'Failed to set target price.');
+    }
+
+    setShowNotificationInput(false);
+    setTargetPrice('');
+    Animated.timing(inputWidth, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  useEffect(() => {
+    checkWishlistStatus();
+    fetchTargetPrice();
+  }, []);
+
+  const checkWishlistStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/wishlist', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const wishlistItems = response.data;
+      const inWishlist = wishlistItems.some(item => item.productId._id === product.productId);
+      setIsInWishlist(inWishlist);
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    } finally {
+      setLoadingWishlist(false);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (isInWishlist) {
+        // Remove from wishlist
+        await axios.delete(`http://localhost:5000/api/wishlist/${product.productId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Alert.alert('Success', 'Product removed from wishlist!');
+      } else {
+        // Add to wishlist
+        await axios.post('http://localhost:5000/api/wishlist', {
+          productId: product.productId,
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Alert.alert('Success', 'Product added to wishlist!');
+      }
+      setIsInWishlist(!isInWishlist);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      Alert.alert('Error', 'Failed to update wishlist.');
+    }
+  };
+
   return (
     <Card style={styles.card}>
-      <View></View>
+      <View style={styles.cardContent}>
+        {imageError ? (
+          <View style={styles.imageErrorContainer}>
+            <Text style={styles.imageErrorText}>Image Not Available</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: product.image }}
+            style={styles.productImage}
+            onError={handleImageError}
+          />
+        )}
+        <View style={styles.productDetails}>
+          <Title style={styles.productName}>
+            {product.name.split(' ').slice(0, 3).join(' ')}
+            {product.name.split(' ').length > 3 ? '...' : ''}
+          </Title>
+          <Paragraph style={styles.productDescription}>{product.description}</Paragraph>
+          <View style={styles.priceContainer}>
+            <Text style={styles.currentPrice}>₹{product.currentPrice.toFixed(2)}</Text>
+            {product.originalPrice && product.originalPrice > product.currentPrice && (
+              <Text style={styles.originalPrice}>₹{product.originalPrice.toFixed(2)}</Text>
+            )}
+            {product.discount > 0 && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{product.discount}% OFF</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+      <Card.Content>
+
+        <View style={styles.actionButtonsContainer}>
+          {showNotificationInput ? (
+            <Animated.View style={[styles.notificationInputContainer, { width: inputWidth.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '70%'],
+            }) }]}>
+              <TextInput
+                label="Target Price"
+                value={targetPrice}
+                onChangeText={setTargetPrice}
+                keyboardType="numeric"
+                style={styles.targetPriceInput}
+                dense
+              />
+              <Button mode="contained" onPress={handleSubmitPrice} style={styles.submitPriceButton} labelStyle={styles.submitPriceButtonLabel}>
+                Submit
+              </Button>
+            </Animated.View>
+          ) : (
+            <Button
+              mode="contained"
+              onPress={handleNotifyMeClick}
+              style={[styles.notifyMeButton, isNotified && styles.notifiedButton]}
+              labelStyle={styles.notifyMeButtonLabel}
+            >
+              {fetchedTargetPrice ? `Target: ₹${fetchedTargetPrice.toFixed(2)}` : (isNotified ? 'Notified' : 'Notify Me')}
+            </Button>
+          )}
+          <TouchableOpacity onPress={handleWishlistToggle} style={styles.trackButton}>
+            <Image source={isInWishlist ? require('../../assets/check-icon.svg') : require('../../assets/trash-icon.svg')} style={styles.wishlistIcon} />
+          </TouchableOpacity>
+        </View>
+      </Card.Content>
     </Card>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
+  wishlistIcon: {
+    width: 24,
+    height: 24,
+    tintColor: '#4285F4',
+  },
     margin: 10,
     borderRadius: 8,
     elevation: 2,
@@ -68,25 +267,56 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  targetPriceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
+
   targetPriceInput: {
     flex: 1,
     height: 40,
     marginRight: 10,
     backgroundColor: '#f9f9f9',
   },
+  wishlistLoadingIndicator: {
+    marginVertical: 10,
+  },
+  wishlistButtonContainer: {
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  inWishlistContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e0ffe0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  checkIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 5,
+  },
+  inWishlistText: {
+    color: '#28a745',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  removeButton: {
+    marginLeft: 10,
+    padding: 5,
+  },
+  trashIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#dc3545',
+  },
   wishlistButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#4285F4',
     borderRadius: 5,
-    paddingHorizontal: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   wishlistButtonLabel: {
-    color: '#333',
-    fontSize: 12,
+    color: '#fff',
+    fontSize: 14,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -94,24 +324,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  autoBuyButton: {
+  notifyMeButton: {
     backgroundColor: '#4285F4',
     borderRadius: 5,
     flex: 1,
     marginRight: 10,
   },
-  autoBuyButtonLabel: {
+  notifyMeButtonLabel: {
     color: '#fff',
     fontSize: 14,
   },
-  trackButton: {
-    padding: 8,
+  notifiedButton: {
+    backgroundColor: '#00008B', // Dark blue color
+  },
+  notificationInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  submitPriceButton: {
+    backgroundColor: '#4285F4',
     borderRadius: 5,
-    backgroundColor: '#f0f0f0',
+    marginLeft: 5,
+    height: 40,
+    justifyContent: 'center',
+  },
+  submitPriceButtonLabel: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  trackButton: {
+    marginLeft: 10,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#e0e0e0',
   },
   trackIcon: {
     width: 20,
     height: 20,
+  },
+  imageErrorContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 10,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageErrorText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 10,
   },
 });
 

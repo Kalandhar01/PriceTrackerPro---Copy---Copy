@@ -1,14 +1,32 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
+import axios from 'axios';
 
 const ProductSearch = ({ onTrackProduct }) => {
   const [productUrl, setProductUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleTrack = () => {
-    if (productUrl.trim()) {
-      onTrackProduct(productUrl);
+  const handleTrack = async () => {
+    if (!productUrl.trim()) {
+      setErrorMessage('Please enter a product URL.');
+      return;
+    }
+    setErrorMessage(''); // Clear any previous error messages
+
+    setLoading(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/scrape', { productUrl });
+      // Alert.alert('Success', 'Product tracked successfully!'); // Replaced with a more subtle notification if needed later
+      console.log('Scraped product data:', response.data);
+      onTrackProduct(response.data); // Pass the scraped data back to HomeScreen
       setProductUrl('');
+    } catch (error) {
+      console.error('Error tracking product:', error.response ? error.response.data : error.message);
+      setErrorMessage(error.response ? error.response.data.message : 'Failed to track product.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -19,17 +37,25 @@ const ProductSearch = ({ onTrackProduct }) => {
       <View style={styles.inputContainer}>
         <TextInput
           value={productUrl}
-          onChangeText={setProductUrl}
+          onChangeText={(text) => {
+            setProductUrl(text);
+            if (errorMessage && text.trim()) {
+              setErrorMessage(''); // Clear error message when user starts typing
+            }
+          }}
           mode="outlined"
           style={styles.input}
           placeholder="https://www.amazon.com/product-link or a..."
         />
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         <Button
           mode="contained"
           onPress={handleTrack}
           icon="magnify"
           style={styles.button}
           labelStyle={styles.buttonLabel}
+          loading={loading}
+          disabled={loading}
         >
           Track Product
         </Button>
@@ -73,6 +99,11 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });
 

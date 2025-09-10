@@ -1,6 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./config/db');
+const Product = require('./models/Product');
+
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,27 +16,17 @@ app.get('/', (req, res) => {
   res.send('Price Tracker Backend API');
 });
 
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
 // API endpoint to get product details by ID
-app.get('/api/products/:productId', (req, res) => {
-  const productId = req.params.productId;
-  // Dummy data for now
-  const productDetails = {
-    productId: productId,
-    title: `Product ${productId} Title`,
-    description: `This is a detailed description for product ${productId}.`,
-    pricing: {
-      currentPrice: 99.99,
-      targetPrice: 80.00,
-      currency: 'USD'
-    },
-    availability: 'In Stock',
-    imageUrls: [
-      `https://example.com/images/product${productId}_1.jpg`,
-      `https://example.com/images/product${productId}_2.jpg`
-    ]
-  };
-  res.json(productDetails);
-});
+const productRoutes = require('./routes/productRoutes');
+app.use('/api/products', productRoutes);
+const scraperRoutes = require('./routes/scraperRoutes');
+app.use('/api/scrape', scraperRoutes);
+
+const wishlistRoutes = require('./routes/wishlistRoutes');
+app.use('/api/wishlist', wishlistRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

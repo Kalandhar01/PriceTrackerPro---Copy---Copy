@@ -1,57 +1,94 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { Appbar } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { Appbar, Button } from 'react-native-paper';
 import WishlistItem from '../components/WishlistItem';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WishlistScreen = ({ navigation }) => {
-  const [wishlistItems, setWishlistItems] = useState([
-    {
-      id: '1',
-      name: 'Mechanical Gaming Keyboard RGB',
-      image: 'https://via.placeholder.com/150/FF0000/FFFFFF?text=Gaming+Keyboard',
-      currentPrice: 99.00,
-      targetPrice: 75.00,
-      status: 'Tracking',
-      notificationsOn: true,
-      autoBuyOn: false,
-    },
-    {
-      id: '2',
-      name: 'iPhone 15 Pro 128GB',
-      image: 'https://via.placeholder.com/150/0000FF/FFFFFF?text=iPhone+15',
-      currentPrice: 850.00,
-      targetPrice: 850.00,
-      status: 'Price Hit',
-      notificationsOn: true,
-      autoBuyOn: true,
-    },
-    {
-      id: '3',
-      name: 'ASUS ROG Gaming Laptop',
-      image: 'https://via.placeholder.com/150/00FF00/000000?text=Gaming+Laptop',
-      currentPrice: 1299.99,
-      targetPrice: 1100.00,
-      status: 'Tracking',
-      notificationsOn: false,
-      autoBuyOn: true,
-    },
-  ]);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleDeleteItem = (id) => {
-    setWishlistItems(wishlistItems.filter(item => item.id !== id));
+  useEffect(() => {
+    fetchWishlistItems();
+  }, []);
+
+  const fetchWishlistItems = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/wishlist', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setWishlistItems(response.data);
+    } catch (err) {
+      console.error('Error fetching wishlist items:', err);
+      setError('Failed to load wishlist. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async (wishlistItemId) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/wishlist/${wishlistItemId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      Alert.alert('Success', 'Product removed from wishlist!');
+      fetchWishlistItems(); // Refresh the list
+    } catch (err) {
+      console.error('Error deleting item from wishlist:', err);
+      Alert.alert('Error', 'Failed to remove item from wishlist.');
+    }
   };
 
   const handleToggleNotifications = (id) => {
-    setWishlistItems(wishlistItems.map(item =>
-      item.id === id ? { ...item, notificationsOn: !item.notificationsOn } : item
-    ));
+    // This functionality is not yet implemented in the backend
+    console.log(`Toggle notifications for item ${id}`);
   };
 
   const handleToggleAutoBuy = (id) => {
-    setWishlistItems(wishlistItems.map(item =>
-      item.id === id ? { ...item, autoBuyOn: !item.autoBuyOn } : item
-    ));
+    // This functionality is not yet implemented in the backend
+    console.log(`Toggle auto-buy for item ${id}`);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4285F4" />
+        <Text>Loading wishlist...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button mode="contained" onPress={fetchWishlistItems} style={styles.retryButton}>
+          Retry
+        </Button>
+      </View>
+    );
+  }
+
+  if (wishlistItems.length === 0) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="My Wishlist" />
+        </Appbar.Header>
+        <Text style={styles.emptyWishlistText}>Your wishlist is empty.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -63,13 +100,14 @@ const WishlistScreen = ({ navigation }) => {
         data={wishlistItems}
         renderItem={({ item }) => (
           <WishlistItem
-            item={item}
-            onDelete={handleDeleteItem}
+            item={item.productId}
+            wishlistItemId={item._id}
+            onDelete={() => handleDeleteItem(item._id)}
             onToggleNotifications={handleToggleNotifications}
             onToggleAutoBuy={handleToggleAutoBuy}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         contentContainerStyle={styles.list}
       />
     </View>
@@ -83,6 +121,24 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 10,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  retryButton: {
+    marginTop: 10,
+  },
+  emptyWishlistText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 50,
   },
 });
 
