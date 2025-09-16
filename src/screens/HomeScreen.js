@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
-import { Alert } from 'react-native';
-import { View, Text, StyleSheet, FlatList, ScrollView, Image } from 'react-native';
-import ProductSearch from '../components/ProductSearch';
-import StoreTags from '../components/StoreTags';
-import ProductDisplayCard from '../components/ProductDisplayCard';
-import TrackedProductCard from '../components/TrackedProductCard';
-import { Appbar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
+import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Appbar } from 'react-native-paper';
+import ProductDisplayCard from '../components/ProductDisplayCard';
+import ProductSearch from '../components/ProductSearch';
+import TrackedProductCard from '../components/TrackedProductCard';
 
 const HomeScreen = ({ navigation }) => {
   const nav = useNavigation();

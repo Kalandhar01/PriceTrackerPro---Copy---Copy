@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { Appbar } from 'react-native-paper';
+import { useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import NotificationCard from '../components/NotificationCard';
 
 const NotificationsScreen = ({ navigation, route }) => {

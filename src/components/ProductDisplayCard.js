@@ -1,10 +1,8 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Alert } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import { ActivityIndicator } from 'react-native-paper';
-import { Card, Title, Paragraph, Button, TextInput } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { Button, Card, Paragraph, TextInput, Title } from 'react-native-paper';
 
 const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const [isInWishlist, setIsInWishlist] = useState(false); // State to manage wishlist status
