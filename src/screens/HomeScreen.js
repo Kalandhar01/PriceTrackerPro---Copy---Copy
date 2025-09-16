@@ -1,28 +1,59 @@
 import React, { useState } from 'react';
+import { Alert } from 'react-native';
 import { View, Text, StyleSheet, FlatList, ScrollView, Image } from 'react-native';
 import ProductSearch from '../components/ProductSearch';
 import StoreTags from '../components/StoreTags';
 import ProductDisplayCard from '../components/ProductDisplayCard';
+import TrackedProductCard from '../components/TrackedProductCard';
 import { Appbar } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = ({ navigation }) => {
+  const nav = useNavigation();
   const [notificationCount, setNotificationCount] = useState(2);
   const [wishlistCount, setWishlistCount] = useState(3);
 
+  const [searchResults, setSearchResults] = useState([]);
   const [trackedProducts, setTrackedProducts] = useState([]);
 
+  // Called when a product is scraped from ProductSearch
   const handleTrackProduct = (productData) => {
-    // Add the scraped product data to the trackedProducts state
-    setTrackedProducts((prevProducts) => [{
+    setSearchResults((prev) => [{
       id: productData._id,
       name: productData.productName,
       image: productData.productImage || 'https://via.placeholder.com/150/CCCCCC/000000?text=No+Image',
-      retailer: 'N/A', // You might want to extract this from the URL or product data
+      retailer: 'N/A',
       currentPrice: productData.currentPrice,
       originalPrice: productData.originalPrice || productData.currentPrice,
       discount: productData.originalPrice ? Math.round(((productData.originalPrice - productData.currentPrice) / productData.originalPrice) * 100) : 0,
       description: productData.description,
-    }, ...prevProducts]);
+    }, ...prev]);
+  };
+
+  // Called when user sets target price in ProductDisplayCard
+  const [notifications, setNotifications] = useState([]);
+
+  const handleAddTrackedProduct = (product, targetPrice) => {
+    setTrackedProducts((prev) => [
+      {
+        ...product,
+        targetPrice,
+      },
+      ...prev,
+    ]);
+    // Remove from search results
+    setSearchResults((prev) => prev.filter((p) => p.id !== product.id));
+    Alert.alert('Success', `${product.name} is now being tracked!`);
+    // Add notification
+    setNotifications((prev) => [
+      {
+        id: Date.now().toString(),
+        type: 'tracking',
+        message: `${product.name} was added to tracking.`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+      ...prev,
+    ]);
   };
 
   return (
@@ -34,27 +65,50 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <View style={styles.appBarActions}>
           <View style={styles.iconContainer}>
-            <Appbar.Action icon="bell" color="#000" onPress={() => navigation.navigate('Notifications')} />
-            {notificationCount > 0 && (
+            <Appbar.Action icon="bell" color="#000" onPress={() => nav.navigate('Notifications', { notifications })} />
+            {notifications.length > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{notificationCount}</Text>
+                <Text style={styles.badgeText}>{notifications.length}</Text>
               </View>
             )}
           </View>
-          <Appbar.Action icon="heart" color="#000" onPress={() => navigation.navigate('Wishlist')} />
+            {/* Wishlist icon removed as requested */}
           <Appbar.Action icon="account" color="#000" onPress={() => navigation.navigate('Profile')} />
         </View>
       </Appbar.Header>
       <ScrollView style={styles.scrollView}>
-        <ProductSearch onTrackProduct={handleTrackProduct} />
+          {/* Move search UI a bit down */}
+          <View style={{ marginTop: 20 }}>
+            <ProductSearch onTrackProduct={handleTrackProduct} />
+          </View>
 
-        <Text style={styles.sectionTitle}>Search Results</Text>
-        <FlatList
-          data={trackedProducts}
-          renderItem={({ item }) => <ProductDisplayCard product={item} />} 
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.productList}
-        />
+          <Text style={styles.sectionTitle}>Search Results</Text>
+          <FlatList
+            data={searchResults}
+            renderItem={({ item }) => (
+              <View style={styles.wellKnownCard}>
+                <ProductDisplayCard product={item} onTrack={handleAddTrackedProduct} />
+              </View>
+            )}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.productList}
+          />
+            {/* Tracked Products Section */}
+            {trackedProducts.length > 0 && (
+              <View style={styles.trackedSection}>
+                <Text style={styles.trackedTitle}>Tracked Products</Text>
+                <View style={{ maxHeight: 400 }}>
+                  <FlatList
+                    data={trackedProducts}
+                    renderItem={({ item }) => (
+                      <TrackedProductCard product={item} />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.trackedList}
+                  />
+                </View>
+              </View>
+            )}
       </ScrollView>
     </View>
   );
@@ -112,11 +166,62 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  wellKnownCard: {
+    margin: 10,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     margin: 10,
   },
+    trackedSection: {
+      marginTop: 20,
+      paddingHorizontal: 10,
+    },
+    trackedTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    trackedList: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
+    trackedCard: {
+      backgroundColor: '#fff',
+      borderRadius: 12,
+      elevation: 2,
+      marginRight: 12,
+      padding: 10,
+      alignItems: 'center',
+      width: 140,
+    },
+    trackedImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 8,
+      marginBottom: 8,
+      backgroundColor: '#f0f0f0',
+    },
+    trackedName: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      marginBottom: 4,
+      textAlign: 'center',
+    },
+    trackedTarget: {
+      fontSize: 13,
+      color: '#4285F4',
+      marginBottom: 2,
+    },
+    trackedPrice: {
+      fontSize: 13,
+      color: '#222',
+    },
   productList: {
     paddingHorizontal: 5,
   },

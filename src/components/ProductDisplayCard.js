@@ -6,7 +6,7 @@ import { ActivityIndicator } from 'react-native-paper';
 import { Card, Title, Paragraph, Button, TextInput } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ProductDisplayCard = ({ product }) => {
+const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const [isInWishlist, setIsInWishlist] = useState(false); // State to manage wishlist status
   const [imageError, setImageError] = useState(false);
   const [showNotificationInput, setShowNotificationInput] = useState(false);
@@ -56,15 +56,9 @@ const ProductDisplayCard = ({ product }) => {
       return;
     }
 
-    try {
-      const response = await axios.post(`http://localhost:5000/api/products/${product.productId}/targetPrice`, {
-        targetPrice: enteredPrice,
-      });
-      Alert.alert('Success', response.data.message);
-      setIsNotified(true);
-    } catch (error) {
-      console.error('Error setting target price:', error);
-      Alert.alert('Error', 'Failed to set target price.');
+    // Only add to tracked products if onTrack is provided
+    if (onTrack) {
+      onTrack(product, enteredPrice);
     }
 
     setShowNotificationInput(false);
@@ -134,70 +128,75 @@ const ProductDisplayCard = ({ product }) => {
 
   return (
     <Card style={styles.card}>
-      <View style={styles.cardContent}>
-        {imageError ? (
-          <View style={styles.imageErrorContainer}>
-            <Text style={styles.imageErrorText}>Image Not Available</Text>
-          </View>
-        ) : (
-          <Image
-            source={{ uri: product.image }}
-            style={styles.productImage}
-            onError={handleImageError}
-          />
-        )}
-        <View style={styles.productDetails}>
-          <Title style={styles.productName}>
-            {product.name.split(' ').slice(0, 3).join(' ')}
-            {product.name.split(' ').length > 3 ? '...' : ''}
-          </Title>
-          <Paragraph style={styles.productDescription}>{product.description}</Paragraph>
-          <View style={styles.priceContainer}>
-            <Text style={styles.currentPrice}>₹{product.currentPrice.toFixed(2)}</Text>
-            {product.originalPrice && product.originalPrice > product.currentPrice && (
-              <Text style={styles.originalPrice}>₹{product.originalPrice.toFixed(2)}</Text>
-            )}
-            {product.discount > 0 && (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{product.discount}% OFF</Text>
-              </View>
-            )}
+      <View style={styles.gradientBg}>
+        <View style={styles.cardContent}>
+          {imageError ? (
+            <View style={styles.imageErrorContainer}>
+              <Text style={styles.imageErrorText}>Image Not Available</Text>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: product.image }}
+              style={styles.productImage}
+              onError={handleImageError}
+            />
+          )}
+          <View style={styles.productDetails}>
+            <Title style={styles.productName}>
+              {product.name}
+            </Title>
+            <Paragraph style={styles.productDescription}>{product.description}</Paragraph>
+            <View style={styles.priceRow}>
+              <Text style={styles.currentPrice}>Actual Price: ₹{product.currentPrice.toFixed(2)}</Text>
+              {product.targetPrice !== undefined && (
+                <Text style={[styles.targetPrice, targetColor === 'green' && { color: 'green', fontWeight: 'bold' }]}>Target: ₹{product.targetPrice}</Text>
+              )}
+              {product.originalPrice && product.originalPrice > product.currentPrice && (
+                <Text style={styles.originalPrice}>₹{product.originalPrice.toFixed(2)}</Text>
+              )}
+              {product.discount > 0 && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>{product.discount}% OFF</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </View>
       <Card.Content>
 
         <View style={styles.actionButtonsContainer}>
-          {showNotificationInput ? (
-            <Animated.View style={[styles.notificationInputContainer, { width: inputWidth.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0%', '70%'],
-            }) }]}>
-              <TextInput
-                label="Target Price"
-                value={targetPrice}
-                onChangeText={setTargetPrice}
-                keyboardType="numeric"
-                style={styles.targetPriceInput}
-                dense
-              />
-              <Button mode="contained" onPress={handleSubmitPrice} style={styles.submitPriceButton} labelStyle={styles.submitPriceButtonLabel}>
-                Submit
+          {onTrack ? (
+            showNotificationInput ? (
+              <Animated.View style={[styles.notificationInputContainer, { width: inputWidth.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '70%'],
+              }) }]}> 
+                <TextInput
+                  label="Target Price"
+                  value={targetPrice}
+                  onChangeText={setTargetPrice}
+                  keyboardType="numeric"
+                  style={styles.targetPriceInput}
+                  dense
+                />
+                <Button mode="contained" onPress={handleSubmitPrice} style={styles.submitPriceButton} labelStyle={styles.submitPriceButtonLabel}>
+                  Submit
+                </Button>
+              </Animated.View>
+            ) : (
+              <Button
+                mode="contained"
+                onPress={handleNotifyMeClick}
+                style={[styles.notifyMeButton, isNotified && styles.notifiedButton]}
+                labelStyle={styles.notifyMeButtonLabel}
+              >
+                Track Me
               </Button>
-            </Animated.View>
+            )
           ) : (
-            <Button
-              mode="contained"
-              onPress={handleNotifyMeClick}
-              style={[styles.notifyMeButton, isNotified && styles.notifiedButton]}
-              labelStyle={styles.notifyMeButtonLabel}
-            >
-              {fetchedTargetPrice ? `Target: ₹${fetchedTargetPrice.toFixed(2)}` : (isNotified ? 'Notified' : 'Notify Me')}
-            </Button>
+            <Text style={styles.trackingText}>This product is under tracking</Text>
           )}
-          <TouchableOpacity onPress={handleWishlistToggle} style={styles.trackButton}>
-            <Image source={isInWishlist ? require('../../assets/check-icon.svg') : require('../../assets/trash-icon.svg')} style={styles.wishlistIcon} />
-          </TouchableOpacity>
         </View>
       </Card.Content>
     </Card>
@@ -205,66 +204,87 @@ const ProductDisplayCard = ({ product }) => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-  wishlistIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#4285F4',
+  trackingText: {
+    color: 'red',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 10,
+    textAlign: 'center'
   },
+  card: {
     margin: 10,
-    borderRadius: 8,
-    elevation: 2,
+    borderRadius: 16,
+    elevation: 4,
     backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    overflow: 'hidden',
+  },
+  gradientBg: {
+    backgroundColor: 'linear-gradient(90deg, #f5f7fa 0%, #c3cfe2 100%)',
+    padding: 0,
   },
   cardContent: {
     flexDirection: 'row',
-    padding: 10,
+    padding: 16,
+    alignItems: 'center',
   },
   productImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    marginRight: 10,
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 16,
+    backgroundColor: '#f0f0f0',
   },
   productDetails: {
     flex: 1,
+    justifyContent: 'center',
   },
   productName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 2,
+    marginBottom: 6,
+    color: '#222',
   },
   productDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 5,
+    marginBottom: 8,
   },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  priceRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 5,
+    flexWrap: 'wrap',
+  },
+  targetPrice: {
+    fontSize: 16,
+    marginLeft: 8,
   },
   currentPrice: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#4285F4',
-    marginRight: 10,
+    marginRight: 12,
   },
   originalPrice: {
-    fontSize: 14,
+    fontSize: 16,
     color: 'gray',
     textDecorationLine: 'line-through',
     marginRight: 10,
   },
   discountBadge: {
     backgroundColor: '#e6ffe6',
-    borderRadius: 5,
-    paddingVertical: 3,
-    paddingHorizontal: 6,
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginLeft: 8,
   },
   discountText: {
     color: '#00cc00',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 
