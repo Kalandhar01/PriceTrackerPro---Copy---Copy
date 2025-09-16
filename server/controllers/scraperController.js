@@ -79,6 +79,7 @@ exports.scrapeProduct = async (req, res) => {
 
     console.log('Processed product data:', { productName, productImage, currentPrice, originalPrice, description });
     res.status(200).json({
+      _id: product._id,
       productName,
       productImage,
       currentPrice: currentPrice,

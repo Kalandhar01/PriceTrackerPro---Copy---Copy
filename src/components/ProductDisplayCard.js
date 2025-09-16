@@ -26,7 +26,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const fetchTargetPrice = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/products/${product.productId}/targetPrice`, {
+      const response = await axios.get(`http://localhost:5000/api/products/${product._id}/targetPrice`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -86,7 +86,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
         },
       });
       const wishlistItems = response.data;
-      const inWishlist = wishlistItems.some(item => item.productId._id === product.productId);
+      const inWishlist = wishlistItems.some(item => item.productId._id === product._id);
       setIsInWishlist(inWishlist);
     } catch (error) {
       console.error('Error checking wishlist status:', error);
@@ -100,7 +100,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
       const token = await AsyncStorage.getItem('token');
       if (isInWishlist) {
         // Remove from wishlist
-        await axios.delete(`http://localhost:5000/api/wishlist/${product.productId}`, {
+        await axios.delete(`http://localhost:5000/api/wishlist/${product._id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -109,7 +109,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
       } else {
         // Add to wishlist
         await axios.post('http://localhost:5000/api/wishlist', {
-          productId: product.productId,
+          productId: product._id,
         }, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -134,14 +134,14 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
             </View>
           ) : (
             <Image
-              source={{ uri: product.image }}
+              source={{ uri: Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? product.imageUrls[0] : product.image }}
               style={styles.productImage}
               onError={handleImageError}
             />
           )}
           <View style={styles.productDetails}>
             <Title style={styles.productName}>
-              {product.name}
+              {product.name && product.name.length > 30 ? product.name.slice(0, 30) + '...' : product.name}
             </Title>
             <Paragraph style={styles.productDescription}>{product.description}</Paragraph>
             <View style={styles.priceRow}>

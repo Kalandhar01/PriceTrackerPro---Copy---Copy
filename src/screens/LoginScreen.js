@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -10,10 +11,15 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-      // Save token and navigate
       if (res.data.token) {
-        // You can use AsyncStorage to save token
-        navigation.replace('Main');
+        await AsyncStorage.setItem('token', res.data.token);
+        console.log('Login success, navigating to Main');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        setError(res.data.message || 'Login failed');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');

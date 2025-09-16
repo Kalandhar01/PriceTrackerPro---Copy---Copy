@@ -1,7 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Appbar } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import ProductDisplayCard from '../components/ProductDisplayCard';
 import ProductSearch from '../components/ProductSearch';
 import TrackedProductCard from '../components/TrackedProductCard';
@@ -13,11 +15,13 @@ const HomeScreen = ({ navigation }) => {
 
   const [searchResults, setSearchResults] = useState([]);
   const [trackedProducts, setTrackedProducts] = useState([]);
+  const [trackedLoading, setTrackedLoading] = useState(true);
 
   // Called when a product is scraped from ProductSearch
   const handleTrackProduct = (productData) => {
     setSearchResults((prev) => [{
       id: productData._id,
+      _id: productData._id,
       name: productData.productName,
       image: productData.productImage || 'https://via.placeholder.com/150/CCCCCC/000000?text=No+Image',
       retailer: 'N/A',
@@ -31,28 +35,54 @@ const HomeScreen = ({ navigation }) => {
   // Called when user sets target price in ProductDisplayCard
   const [notifications, setNotifications] = useState([]);
 
-  const handleAddTrackedProduct = (product, targetPrice) => {
-    setTrackedProducts((prev) => [
-      {
-        ...product,
+  const handleAddTrackedProduct = async (product, targetPrice) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/tracked-products', {
+        productId: product._id || product.id,
         targetPrice,
-      },
-      ...prev,
-    ]);
-    // Remove from search results
-    setSearchResults((prev) => prev.filter((p) => p.id !== product.id));
-    Alert.alert('Success', `${product.name} is now being tracked!`);
-    // Add notification
-    setNotifications((prev) => [
-      {
-        id: Date.now().toString(),
-        type: 'tracking',
-        message: `${product.name} was added to tracking.`,
-        timestamp: new Date().toLocaleTimeString(),
-      },
-      ...prev,
-    ]);
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchTrackedProducts();
+      setSearchResults((prev) => prev.filter((p) => p.id !== product.id));
+      Alert.alert('Success', `${product.name} is now being tracked!`);
+      setNotifications((prev) => [
+        {
+          id: Date.now().toString(),
+          type: 'tracking',
+          message: `${product.name} was added to tracking.`,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to track product.');
+    }
   };
+
+  const fetchTrackedProducts = async () => {
+    setTrackedLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/tracked-products', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Map backend data to expected format for TrackedProductCard
+      setTrackedProducts(res.data.map(tp => ({
+        ...tp.productId,
+        targetPrice: tp.targetPrice,
+        id: tp.productId._id || tp.productId.id,
+      })));
+    } catch (err) {
+      setTrackedProducts([]);
+    }
+    setTrackedLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTrackedProducts();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -92,9 +122,11 @@ const HomeScreen = ({ navigation }) => {
             contentContainerStyle={styles.productList}
           />
             {/* Tracked Products Section */}
-            {trackedProducts.length > 0 && (
-              <View style={styles.trackedSection}>
-                <Text style={styles.trackedTitle}>Tracked Products</Text>
+            <View style={styles.trackedSection}>
+              <Text style={styles.trackedTitle}>Tracked Products</Text>
+              {trackedLoading ? (
+                <Text>Loading...</Text>
+              ) : trackedProducts.length > 0 ? (
                 <FlatList
                   data={trackedProducts}
                   renderItem={({ item }) => (
@@ -103,8 +135,10 @@ const HomeScreen = ({ navigation }) => {
                   keyExtractor={(item) => item.id}
                   contentContainerStyle={styles.trackedList}
                 />
-              </View>
-            )}
+              ) : (
+                <Text style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>Tracking Product Empty</Text>
+              )}
+            </View>
       </ScrollView>
     </View>
   );
