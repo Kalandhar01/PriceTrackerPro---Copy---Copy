@@ -1,9 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Appbar } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import ProductDisplayCard from '../components/ProductDisplayCard';
 import ProductSearch from '../components/ProductSearch';
 import TrackedProductCard from '../components/TrackedProductCard';
