@@ -41,14 +41,8 @@ const HomeScreen = ({ navigation }) => {
               </View>
             )}
           </View>
-          <View style={styles.iconContainer}>
-            <Appbar.Action icon="heart" color="#000" onPress={() => navigation.navigate('Wishlist')} />
-            {wishlistCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{wishlistCount}</Text>
-              </View>
-            )}
-          </View>
+          <Appbar.Action icon="heart" color="#000" onPress={() => navigation.navigate('Wishlist')} />
+          <Appbar.Action icon="account" color="#000" onPress={() => navigation.navigate('Profile')} />
         </View>
       </Appbar.Header>
       <ScrollView style={styles.scrollView}>
