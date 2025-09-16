@@ -39,7 +39,7 @@ const ProfileScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Avatar.Text size={64} label={username ? username[0].toUpperCase() : '?'} style={styles.avatar} />
+        {/* <Avatar.Text size={64} label={username ? username[0].toUpperCase() : '?'} style={styles.avatar} /> */}
         <Text style={styles.username}>{username || 'User'}</Text>
         <Text style={styles.trackedCount}>Tracked Products: {trackedProducts.length}</Text>
       </View>

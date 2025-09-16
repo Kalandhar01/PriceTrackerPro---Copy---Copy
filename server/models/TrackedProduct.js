@@ -19,6 +19,10 @@ const TrackedProductSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  notified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model('TrackedProduct', TrackedProductSchema);

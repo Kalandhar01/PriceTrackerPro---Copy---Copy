@@ -101,7 +101,7 @@ const HomeScreen = ({ navigation }) => {
             )}
           </View>
             {/* Wishlist icon removed as requested */}
-          <Appbar.Action icon="account" color="#000" onPress={() => navigation.navigate('Profile')} />
+          {/* <Appbar.Action icon="account" color="#000" onPress={() => navigation.navigate('Profile')} /> */}
         </View>
       </Appbar.Header>
       <ScrollView style={styles.scrollView}>

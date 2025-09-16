@@ -1,23 +1,23 @@
-const Product = require('../models/Product');
-const Wishlist = require('../models/Wishlist');
+const TrackedProduct = require('../models/TrackedProduct');
 const User = require('../models/User');
 const { sendPriceAlert } = require('../utils/mailer');
 
 // Call this function after product price update
 exports.checkAndNotifyTargetPrice = async (product) => {
-  if (!product.targetPrice || !product.currentPrice) return;
-  if (product.currentPrice <= product.targetPrice) {
-    // Find all users tracking this product
-    const wishlists = await Wishlist.find({ productId: product._id });
-    for (const wishlist of wishlists) {
-      const user = await User.findById(wishlist.userId);
-      if (user && user.email) {
+  if (!product.currentPrice) return;
+  // Find all tracked products for this product
+  const tracked = await TrackedProduct.find({ productId: product._id }).populate('userId');
+  for (const tp of tracked) {
+    if (product.currentPrice <= tp.targetPrice && !tp.notified) {
+      if (tp.userId && tp.userId.email) {
         await sendPriceAlert(
-          user.email,
+          tp.userId.email,
           product.title,
           product.currentPrice,
-          product.targetPrice
+          tp.targetPrice
         );
+        tp.notified = true;
+        await tp.save();
       }
     }
   }
