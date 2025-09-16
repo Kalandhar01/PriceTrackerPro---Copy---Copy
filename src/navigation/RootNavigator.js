@@ -11,6 +11,8 @@ const Stack = createNativeStackNavigator();
 const RootNavigator = () => {
   return (
     <Stack.Navigator>
+      <Stack.Screen name="Login" component={require('../screens/LoginScreen').default} options={{ headerShown: false }} />
+      <Stack.Screen name="Register" component={require('../screens/RegisterScreen').default} options={{ headerShown: false }} />
       <Stack.Screen name="Main" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />

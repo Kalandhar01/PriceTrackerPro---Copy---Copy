@@ -73,6 +73,10 @@ exports.scrapeProduct = async (req, res) => {
 
     await product.save();
 
+      // Check and notify if price reaches target
+      const { checkAndNotifyTargetPrice } = require('./notificationController');
+      await checkAndNotifyTargetPrice(product);
+
     console.log('Processed product data:', { productName, productImage, currentPrice, originalPrice, description });
     res.status(200).json({
       productName,

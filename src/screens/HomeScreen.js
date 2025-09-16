@@ -95,16 +95,14 @@ const HomeScreen = ({ navigation }) => {
             {trackedProducts.length > 0 && (
               <View style={styles.trackedSection}>
                 <Text style={styles.trackedTitle}>Tracked Products</Text>
-                <View style={{ maxHeight: 400 }}>
-                  <FlatList
-                    data={trackedProducts}
-                    renderItem={({ item }) => (
-                      <TrackedProductCard product={item} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.trackedList}
-                  />
-                </View>
+                <FlatList
+                  data={trackedProducts}
+                  renderItem={({ item }) => (
+                    <TrackedProductCard product={item} />
+                  )}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.trackedList}
+                />
               </View>
             )}
       </ScrollView>
