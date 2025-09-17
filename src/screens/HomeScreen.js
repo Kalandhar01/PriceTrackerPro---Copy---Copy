@@ -7,6 +7,7 @@ import { Appbar } from 'react-native-paper';
 import ProductDisplayCard from '../components/ProductDisplayCard';
 import ProductSearch from '../components/ProductSearch';
 import TrackedProductCard from '../components/TrackedProductCard';
+import { BASE_URL } from '../utils/api';
 
 const HomeScreen = ({ navigation }) => {
   const nav = useNavigation();
@@ -38,7 +39,7 @@ const HomeScreen = ({ navigation }) => {
   const handleAddTrackedProduct = async (product, targetPrice) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/tracked-products', {
+      const res = await axios.post(`${BASE_URL}/api/tracked-products`, {
         productId: product._id || product.id,
         targetPrice,
       }, {
@@ -65,7 +66,7 @@ const HomeScreen = ({ navigation }) => {
     setTrackedLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/tracked-products', {
+      const res = await axios.get(`${BASE_URL}/api/tracked-products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Map backend data to expected format for TrackedProductCard

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Appbar, Button } from 'react-native-paper';
 import WishlistItem from '../components/WishlistItem';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../utils/api';
 
 const WishlistScreen = ({ navigation }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -18,7 +19,7 @@ const WishlistScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/wishlist', {
+      const response = await axios.get(`${BASE_URL}/api/wishlist`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -35,7 +36,7 @@ const WishlistScreen = ({ navigation }) => {
   const handleDeleteItem = async (wishlistItemId) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/wishlist/${wishlistItemId}`, {
+      await axios.delete(`${BASE_URL}/api/wishlist/${wishlistItemId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

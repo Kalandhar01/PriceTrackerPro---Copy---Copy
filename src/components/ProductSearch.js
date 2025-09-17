@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
 import axios from 'axios';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Button, TextInput } from 'react-native-paper';
+import { BASE_URL } from '../utils/api';
 
 const ProductSearch = ({ onTrackProduct }) => {
   const [productUrl, setProductUrl] = useState('');
@@ -17,7 +18,7 @@ const ProductSearch = ({ onTrackProduct }) => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/scrape', { productUrl });
+      const response = await axios.post(`${BASE_URL}/api/scrape`, { productUrl });
       // Alert.alert('Success', 'Product tracked successfully!'); // Replaced with a more subtle notification if needed later
       console.log('Scraped product data:', response.data);
       onTrackProduct(response.data); // Pass the scraped data back to HomeScreen

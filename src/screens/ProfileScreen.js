@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Avatar, Card } from 'react-native-paper';
+import { BASE_URL } from '../utils/api';
 
 const ProfileScreen = () => {
   const [username, setUsername] = useState('');
@@ -15,12 +16,12 @@ const ProfileScreen = () => {
       try {
         const token = await AsyncStorage.getItem('token');
         // Get user info
-        const userRes = await axios.get('http://localhost:5000/api/user/profile', {
+        const userRes = await axios.get(`${BASE_URL}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsername(userRes.data.username);
         // Get tracked products
-        const trackedRes = await axios.get('http://localhost:5000/api/tracked-products', {
+        const trackedRes = await axios.get(`${BASE_URL}/api/tracked-products`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setTrackedProducts(trackedRes.data.map(tp => ({

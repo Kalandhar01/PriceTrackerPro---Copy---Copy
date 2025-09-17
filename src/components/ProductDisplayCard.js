@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Paragraph, TextInput, Title } from 'react-native-paper';
+import { BASE_URL } from '../utils/api';
 
 const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const [isInWishlist, setIsInWishlist] = useState(false); // State to manage wishlist status
@@ -26,7 +27,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const fetchTargetPrice = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/products/${product._id}/targetPrice`, {
+      const response = await axios.get(`${BASE_URL}/api/products/${product._id}/targetPrice`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -80,7 +81,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
   const checkWishlistStatus = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/wishlist', {
+      const response = await axios.get(`${BASE_URL}/api/wishlist`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -100,7 +101,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
       const token = await AsyncStorage.getItem('token');
       if (isInWishlist) {
         // Remove from wishlist
-        await axios.delete(`http://localhost:5000/api/wishlist/${product._id}`, {
+        await axios.delete(`${BASE_URL}/api/wishlist/${product._id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -108,7 +109,7 @@ const ProductDisplayCard = ({ product, onTrack, targetColor }) => {
         Alert.alert('Success', 'Product removed from wishlist!');
       } else {
         // Add to wishlist
-        await axios.post('http://localhost:5000/api/wishlist', {
+        await axios.post(`${BASE_URL}/api/wishlist`, {
           productId: product._id,
         }, {
           headers: {

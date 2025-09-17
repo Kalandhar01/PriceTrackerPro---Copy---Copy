@@ -35,6 +35,6 @@ app.use('/api/tracked-products', trackedProductRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

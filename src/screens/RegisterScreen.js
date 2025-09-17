@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { BASE_URL } from '../utils/api';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -10,7 +11,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password });
+      const res = await axios.post(`${BASE_URL}/api/auth/register`, { username, email, password });
       if (res.data.token) {
         navigation.replace('Main');
       }
