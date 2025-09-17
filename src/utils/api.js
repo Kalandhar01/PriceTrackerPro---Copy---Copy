@@ -1,1 +1,1 @@
-export const BASE_URL = 'http://localhost:5000'; // Replace with your Wi-Fi IP address and port
+export const BASE_URL = 'http://10.18.197.251:5000';
